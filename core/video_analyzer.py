@@ -1,5 +1,7 @@
 import json
 import mimetypes
+import platform
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,21 +48,40 @@ class VideoAnalyzer:
     def _get_mime_type(video_path: Path) -> str:
         return mimetypes.guess_type(video_path.name)[0] or f"video/{video_path.suffix.lstrip('.').lower()}"
 
+    @classmethod
+    def _get_ffprobe_path(cls) -> str:
+        project_root = Path(__file__).resolve().parent.parent
+        bundled_path = cls._get_bundled_ffprobe_path(project_root, platform.system(), platform.machine().lower())
+        if bundled_path.is_file(): return str(bundled_path)
+        system_path = shutil.which("ffprobe")
+        if system_path: return system_path
+        raise RuntimeError("FFprobe를 찾을 수 없습니다. DietFile에 포함된 FFprobe가 없거나 FFmpeg가 설치되지 않았습니다.")
+
     @staticmethod
-    def _probe(path: Path) -> tuple[str, list[dict], dict]:
+    def _get_bundled_ffprobe_path(project_root: Path, system: str, machine: str) -> Path:
+        if system == "Darwin":
+            if machine in {"arm64", "aarch64"}: return project_root / "bin" / "macos-arm64" / "ffprobe"
+            if machine in {"x86_64", "amd64"}: return project_root / "bin" / "macos-x64" / "ffprobe"
+        elif system == "Windows" and machine in {"amd64", "x86_64"}:
+            return project_root / "bin" / "windows-x64" / "ffprobe.exe"
+        elif system == "Linux":
+            if machine in {"x86_64", "amd64"}: return project_root / "bin" / "linux-x64" / "ffprobe"
+            if machine in {"arm64", "aarch64"}: return project_root / "bin" / "linux-arm64" / "ffprobe"
+        return Path()
+
+    @classmethod
+    def _probe(cls, path: Path) -> tuple[str, list[dict], dict]:
         try:
-            process = subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)], capture_output=True, text=True, check=True)
+            process = subprocess.run([cls._get_ffprobe_path(), "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)], capture_output=True, text=True, check=True)
         except FileNotFoundError as exc:
-            raise RuntimeError("ffprobe를 찾을 수 없습니다. FFmpeg를 설치해 주세요.") from exc
+            raise RuntimeError("FFprobe를 실행할 수 없습니다.") from exc
         except subprocess.CalledProcessError as exc:
             message = exc.stderr.strip() or "비디오 정보를 분석할 수 없습니다."
             raise RuntimeError(message) from exc
-
         try:
             data = json.loads(process.stdout)
         except json.JSONDecodeError as exc:
-            raise RuntimeError("ffprobe의 분석 결과를 읽을 수 없습니다.") from exc
-
+            raise RuntimeError("FFprobe의 분석 결과를 읽을 수 없습니다.") from exc
         format_info = data.get("format", {})
         format_name = str(format_info.get("format_name", "")).split(",")[0].upper()
         return format_name, data.get("streams", []), format_info

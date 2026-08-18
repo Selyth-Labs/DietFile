@@ -1,0 +1,14 @@
+FFmpeg version: 9.0
+License: LGPL-2.1+
+Target: macOS arm64
+
+Configure:
+./configure \
+  --prefix="$PWD/build" \
+  --arch=arm64 \
+  --cc=clang \
+  --disable-debug \
+  --disable-doc \
+  --disable-ffplay \
+  --disable-indevs \
+  --disable-outdevs
