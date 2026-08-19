@@ -50,6 +50,42 @@ make -j$(sysctl -n hw.logicalcpu)
 make install
 
 --------------------------------------------------
+Windows x86_64 (MSYS2 MinGW 64-bit)
+--------------------------------------------------
+
+Prerequisites (MSYS2 MinGW 64-bit Terminal):
+pacman -Syu
+pacman -S --needed \
+  mingw-w64-x86_64-gcc \
+  mingw-w64-x86_64-cmake \
+  mingw-w64-x86_64-nasm \
+  mingw-w64-x86_64-yasm \
+  make \
+  git \
+  pkgconf
+
+Configure:
+./configure \
+  --prefix="$PWD/build-win64" \
+  --arch=x86_64 \
+  --target-os=mingw32 \
+  --enable-static \
+  --disable-shared \
+  --disable-debug \
+  --disable-doc \
+  --disable-ffplay \
+  --disable-indevs \
+  --disable-outdevs \
+  --disable-avdevice \
+  --extra-cflags="-static" \
+  --extra-ldflags="-static" \
+  --pkg-config-flags="--static"
+
+Build:
+make -j$(nproc)
+make install
+
+--------------------------------------------------
 Common Options
 --------------------------------------------------
 - Static build only (--enable-static --disable-shared)
