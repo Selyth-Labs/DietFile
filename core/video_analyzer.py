@@ -6,7 +6,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-SUPPORTED_VIDEO_FORMATS = {"MP4", "MOV", "MKV", "WEBM", "AVI"}
+SUPPORTED_FFPROBE_NAMES = {"MP4", "MOV", "M4A", "3GP", "3G2", "MJ2", "MATROSKA", "WEBM", "AVI"}
 
 @dataclass(frozen=True)
 class VideoInfo:
@@ -42,7 +42,9 @@ class VideoAnalyzer:
 
     @staticmethod
     def _validate_format(format_name: str) -> None:
-        if format_name not in SUPPORTED_VIDEO_FORMATS: raise ValueError("지원하지 않는 비디오 형식입니다. MP4, MOV, MKV, WebM 또는 AVI를 선택해 주세요.")
+        names = {name.strip().upper() for name in format_name.split(",")}
+        if not names & SUPPORTED_FFPROBE_NAMES:
+            raise ValueError("지원하지 않는 비디오 형식입니다. MP4, MOV, MKV, WebM 또는 AVI를 선택해 주세요.")
 
     @staticmethod
     def _get_mime_type(video_path: Path) -> str:

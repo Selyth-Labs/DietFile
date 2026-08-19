@@ -1,14 +1,60 @@
-FFmpeg version: 9.0
+FFmpeg 9.0 Build Notes
+======================
+
 License: LGPL-2.1+
-Target: macOS arm64
+
+--------------------------------------------------
+macOS arm64 (Apple Silicon - Native)
+--------------------------------------------------
 
 Configure:
 ./configure \
-  --prefix="$PWD/build" \
+  --prefix="$PWD/build-macos-arm64" \
   --arch=arm64 \
   --cc=clang \
   --disable-debug \
   --disable-doc \
   --disable-ffplay \
   --disable-indevs \
-  --disable-outdevs
+  --disable-outdevs \
+  --disable-avdevice \
+  --enable-static \
+  --disable-shared
+
+Build:
+make -j$(sysctl -n hw.logicalcpu)
+make install
+
+--------------------------------------------------
+macOS x86_64 (Intel - Cross compile on Apple Silicon)
+--------------------------------------------------
+
+Configure:
+./configure \
+  --prefix="$PWD/build-macos-x64" \
+  --arch=x86_64 \
+  --cc="clang -arch x86_64" \
+  --extra-cflags="-arch x86_64" \
+  --extra-ldflags="-arch x86_64" \
+  --disable-debug \
+  --disable-doc \
+  --disable-ffplay \
+  --disable-indevs \
+  --disable-outdevs \
+  --disable-avdevice \
+  --enable-static \
+  --disable-shared
+
+Build:
+make -j$(sysctl -n hw.logicalcpu)
+make install
+
+--------------------------------------------------
+Common Options
+--------------------------------------------------
+- Static build only (--enable-static --disable-shared)
+- No debug symbols
+- No documentation
+- No ffplay
+- No input/output devices
+- No avdevice
